@@ -1,0 +1,110 @@
+{
+  "info": {
+    "name": "SaaS Customer Portal Gateway",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Signup",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Password123!\"\n}" }
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Password123!\"\n}" }
+      }
+    },
+    {
+      "name": "Channels - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/channels", "host": ["{{baseUrl}}"], "path": ["api", "v1", "channels"] }
+      }
+    },
+    {
+      "name": "Channels - Connect",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/v1/channels/connect", "host": ["{{baseUrl}}"], "path": ["api", "v1", "channels", "connect"] },
+        "body": { "mode": "raw", "raw": "{\n  \"provider\": \"youtube\",\n  \"providerChannelId\": \"abc123\",\n  \"displayName\": \"My Channel\"\n}" }
+      }
+    },
+    {
+      "name": "Upload - Schedule",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/v1/upload", "host": ["{{baseUrl}}"], "path": ["api", "v1", "upload"] },
+        "body": { "mode": "raw", "raw": "{\n  \"channelId\": \"{{channelId}}\",\n  \"assetUrl\": \"https://example.com/video.mp4\",\n  \"title\": \"Demo\",\n  \"platform\": \"youtube\",\n  \"scheduledAt\": \"2025-01-01T00:00:00.000Z\"\n}" }
+      }
+    },
+    {
+      "name": "Status - Get",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/status/{{job_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "status", "{{job_id}}"] }
+      }
+    },
+    {
+      "name": "Monetization - Get",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/monetization", "host": ["{{baseUrl}}"], "path": ["api", "v1", "monetization"] }
+      }
+    },
+    {
+      "name": "Translate - Preview",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/v1/translate-preview", "host": ["{{baseUrl}}"], "path": ["api", "v1", "translate-preview"] },
+        "body": { "mode": "raw", "raw": "{\n  \"text\": \"Hello\",\n  \"targetLang\": \"es\"\n}" }
+      }
+    },
+    {
+      "name": "Admin - Suspend",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Authorization", "value": "Bearer {{adminToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/admin/user/{{userId}}/suspend", "host": ["{{baseUrl}}"], "path": ["admin", "user", "{{userId}}", "suspend"] }
+      }
+    },
+    {
+      "name": "Admin - Reactivate",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Authorization", "value": "Bearer {{adminToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/admin/user/{{userId}}/reactivate", "host": ["{{baseUrl}}"], "path": ["admin", "user", "{{userId}}", "reactivate"] }
+      }
+    },
+    {
+      "name": "Admin - Retry Job",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Authorization", "value": "Bearer {{adminToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/admin/job/{{jobId}}/retry", "host": ["{{baseUrl}}"], "path": ["admin", "job", "{{jobId}}", "retry"] }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "token", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "channelId", "value": "" },
+    { "key": "job_id", "value": "" }
+  ]
+}
+
+

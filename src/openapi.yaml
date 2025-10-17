@@ -1,0 +1,168 @@
+openapi: 3.0.3
+info:
+  title: SaaS Customer Portal Gateway API
+  version: 0.1.0
+servers:
+  - url: http://localhost:4000
+paths:
+  /auth/signup:
+    post:
+      summary: User signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        '201': { description: Created }
+  /auth/login:
+    post:
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+              required: [email, password]
+      responses:
+        '200': { description: OK }
+  /api/v1/channels:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: List user channels
+      responses:
+        '200': { description: OK }
+  /api/v1/channels/connect:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Connect channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider: { type: string }
+                providerChannelId: { type: string }
+                displayName: { type: string }
+              required: [provider, providerChannelId]
+      responses:
+        '201': { description: Created }
+  /api/v1/upload:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Schedule upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channelId: { type: string }
+                assetUrl: { type: string, format: uri }
+                title: { type: string }
+                description: { type: string }
+                platform: { type: string }
+                scheduledAt: { type: string, format: date-time }
+              required: [channelId, assetUrl, title, platform, scheduledAt]
+      responses:
+        '201': { description: Created }
+  /api/v1/status/{job_id}:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Get job status
+      parameters:
+        - in: path
+          name: job_id
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: OK }
+  /api/v1/monetization:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Monetization info
+      responses:
+        '200': { description: OK }
+  /api/v1/translate-preview:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Translate preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+                targetLang: { type: string }
+              required: [text, targetLang]
+      responses:
+        '200': { description: OK }
+  /webhook/stripe:
+    post:
+      summary: Stripe webhook
+      responses:
+        '200': { description: OK }
+  /admin/users:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: List users
+      responses:
+        '200': { description: OK }
+  /admin/user/{id}/suspend:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Suspend user
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: OK }
+  /admin/user/{id}/reactivate:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Reactivate user
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: OK }
+  /admin/job/{id}/retry:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Retry job
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: OK }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
