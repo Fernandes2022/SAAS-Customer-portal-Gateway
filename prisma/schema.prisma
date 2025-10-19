@@ -64,6 +64,7 @@ model Plan {
 model User {
   id               String      @id @default(uuid())
   email            String      @unique
+  name             String?
   passwordHash     String?
   oauthProvider    String?
   oauthProviderId  String?
@@ -79,8 +80,7 @@ model User {
   channels         Channel[]
   jobs             Job[]
   usages           PlanUsage[]
-  apiKeys          ApiKey[]
-  auditLogs        AuditLog[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([planId])
 }
@@ -127,7 +127,6 @@ model Job {
   // Relations
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   channel       Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  attempts      JobAttempt[]
 
   @@index([userId, createdAt])
   @@index([status, scheduledAt])
@@ -165,53 +164,20 @@ model WebhookEvent {
   @@unique([source, eventId])
 }
 
-model JobAttempt {
-  id            String    @id @default(uuid())
-  jobId         String
-  attemptNumber Int
-  status        JobStatus
-  errorCode     String?
-  errorMessage  String?
-  logsJson      Json?
-  startedAt     DateTime  @default(now())
-  finishedAt    DateTime?
-
-  job           Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  @@unique([jobId, attemptNumber])
-  @@index([jobId])
-}
-
-model ApiKey {
+// Password reset tokens with short TTL to support forgot-password flow
+model PasswordResetToken {
   id         String   @id @default(uuid())
   userId     String
-  name       String
-  keyPrefix  String   // first 8-12 chars of the key, for quick lookup
-  hashedKey  String   // store only a hash
-  active     Boolean  @default(true)
-  lastUsedAt DateTime?
+  tokenHash  String   // store a hash of the token, not the raw value
   createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  usedAt     DateTime?
 
+  // Relations
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, name])
-  @@unique([hashedKey])
-  @@index([keyPrefix])
-}
-
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  action     String
-  targetType String?
-  targetId   String?
-  ip         String?
-  userAgent  String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
   @@index([userId])
-  @@index([targetType, targetId])
+  @@index([expiresAt])
 }
+
+

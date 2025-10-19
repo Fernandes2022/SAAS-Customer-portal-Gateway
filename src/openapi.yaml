@@ -38,6 +38,35 @@ paths:
               required: [email, password]
       responses:
         '200': { description: OK }
+  /auth/forgot-password:
+    post:
+      summary: Request password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+              required: [email]
+      responses:
+        '200': { description: OK }
+  /auth/reset-password:
+    post:
+      summary: Reset password using token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                password: { type: string }
+              required: [token, password]
+      responses:
+        '200': { description: OK }
   /api/v1/channels:
     get:
       security: [{ bearerAuth: [] }]

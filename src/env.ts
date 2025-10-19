@@ -32,10 +32,19 @@ const EnvSchema = z.object({
 
   WEBSOCKET_PUBLIC_URL: z.string().url(),
 
+  // Single-admin policy: the email defined here is treated as the only ADMIN
+  ADMIN_EMAIL: z.string().email().optional(),
+
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   REDIS_URL: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
+
+  // Email (Gmail App Password) / reset password
+  GMAIL_USER: z.string().email().optional(),
+  GMAIL_APP_PASSWORD: z.string().optional(),
+  EMAIL_FROM: z.string().email().optional(),
+  FRONTEND_BASE_URL: z.string().url().optional(),
 });
 
 export type AppEnv = z.infer<typeof EnvSchema>;
