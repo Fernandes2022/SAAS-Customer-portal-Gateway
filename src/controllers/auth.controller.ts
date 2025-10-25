@@ -28,7 +28,7 @@ export class AuthController {
 
   static async issueDevToken(req: AuthenticatedRequest, res: Response) {
     if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'Disabled in production' });
-    const { userId, email, role } = (req.body || {}) as { userId: string; email?: string; role?: 'user' | 'admin' };
+    const { userId, email, role } = (req.body || {}) as { userId: string; email?: string; role?: 'user' | 'admin' | 'admin_viewer' };
     if (!userId) return res.status(400).json({ error: 'userId is required' });
     const token = AuthService.issueDevToken(userId, email, role ?? 'user');
     return res.json({ token });

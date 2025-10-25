@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { BillingController } from '../controllers/billing.controller';
+import { requireAuth } from '../middleware/auth';
 
 export const billingRouter = Router();
 
@@ -15,5 +16,11 @@ billingRouter.post('/webhook/stripe', (req, res, next) => {
     next();
   });
 }, BillingController.webhook);
+
+// Authenticated billing endpoints
+billingRouter.use('/api/v1/billing', requireAuth);
+billingRouter.get('/api/v1/billing/plan', (req, res, next) => BillingController.getPlan(req as any, res).catch(next as any));
+billingRouter.post('/api/v1/billing/checkout', (req, res, next) => BillingController.createCheckoutSession(req as any, res).catch(next as any));
+billingRouter.post('/api/v1/billing/portal', (req, res, next) => BillingController.createPortalSession(req as any, res).catch(next as any));
 
 

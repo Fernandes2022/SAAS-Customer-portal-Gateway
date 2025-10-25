@@ -22,6 +22,30 @@ export class ChannelsController {
     const channel = await ChannelsService.connectChannel(userId, parsed.data);
     res.status(201).json(channel);
   }
+
+  static async disconnect(req: AuthenticatedRequest, res: Response) {
+    const userId = req.auth!.sub;
+    const Params = z.object({ id: z.string().min(1) });
+    const parsed = Params.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const result = await ChannelsService.disconnectChannel(userId, parsed.data.id);
+    res.json(result);
+  }
+
+  static async refresh(req: AuthenticatedRequest, res: Response) {
+    const userId = req.auth!.sub;
+    const Params = z.object({ id: z.string().min(1) });
+    const parsed = Params.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const updated = await ChannelsService.refreshChannel(userId, parsed.data.id);
+    res.json(updated);
+  }
+
+  static async refreshAll(req: AuthenticatedRequest, res: Response) {
+    const userId = req.auth!.sub;
+    const result = await ChannelsService.refreshAllChannels(userId);
+    res.json(result);
+  }
 }
 
 

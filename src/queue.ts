@@ -1,8 +1,8 @@
 import { logger } from './logger';
 import { prisma } from './prisma';
 import { PlanService } from './services/plan.service';
-import axios from 'axios';
-import { env } from './env';
+import { getProviderClient } from './services/providers/registry';
+import { prisma as db } from './prisma';
 import { emitToUser } from './realtime';
 
 type UploadJobPayload = {
@@ -109,8 +109,29 @@ async function handleUploadJob(data: UploadJobPayload) {
   await prisma.job.update({ where: { id: jobId }, data: { status: 'RUNNING', startedAt: new Date(), progress: 1 } });
   emitToUser(userId, 'job:update', { jobId, status: 'RUNNING', progress: 1 });
 
-  await axios.post(`${env.BUBBLE_BASE_URL}/api/1.1/wf/schedule_upload`, { ...data }, {
-    headers: { Authorization: `Bearer ${env.BUBBLE_API_KEY}` },
+  // Look up channel and provider
+  const channel = await db.channel.findUnique({ where: { id: data.channelId } });
+  if (!channel) {
+    const e = new Error('Channel not found');
+    // @ts-ignore
+    e.status = 404;
+    throw e;
+  }
+  const client = getProviderClient(channel.provider);
+  await client.scheduleUpload({
+    channel: {
+      provider: channel.provider,
+      providerChannelId: channel.providerChannelId,
+      displayName: channel.displayName,
+      encryptedRefreshToken: channel.encryptedRefreshToken,
+      metaJson: channel.metaJson as unknown,
+    },
+    job: {
+      assetUrl: data.assetUrl,
+      title: data.title,
+      description: data.description,
+      scheduledAt: data.scheduledAt,
+    },
   });
 
   await prisma.job.update({ where: { id: jobId }, data: { status: 'SUCCEEDED', finishedAt: new Date(), progress: 100 } });

@@ -19,6 +19,15 @@ export class UploadsController {
     const job = await UploadsService.scheduleUpload(userId, parsed.data);
     res.status(201).json(job);
   }
+
+  static async presign(req: AuthenticatedRequest, res: Response) {
+    const userId = req.auth!.sub;
+    const Body = z.object({ filename: z.string().min(1), contentType: z.string().min(1) });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const presigned = await UploadsService.presignUpload(userId, parsed.data);
+    res.json(presigned);
+  }
 }
 
 

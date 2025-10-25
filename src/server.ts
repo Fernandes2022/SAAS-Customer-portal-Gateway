@@ -11,6 +11,8 @@ import { statusRouter } from './routers/status.router';
 import { authRouter } from './routers/auth.router';
 import { monetizationRouter } from './routers/monetization.router';
 import { utilsRouter } from './routers/utils.router';
+import { metricsRouter } from './routers/metrics.router';
+import { plansRouter } from './routers/plans.router';
 
 export function createServer() {
   const app = express();
@@ -28,10 +30,12 @@ export function createServer() {
 
   app.use('/health', healthRouter);
   app.use('/auth', authRouter);
+  app.use(plansRouter); // Public endpoint for viewing plans
   app.use('/api/v1/channels', channelsRouter);
   app.use('/api/v1/upload', uploadsRouter);
   app.use('/api/v1/status', statusRouter);
   app.use('/api/v1/monetization', monetizationRouter);
+  app.use('/api/v1/metrics', metricsRouter);
   app.use('/api/v1', utilsRouter); // contains translate-preview
   app.use('/admin', adminRouter);
 

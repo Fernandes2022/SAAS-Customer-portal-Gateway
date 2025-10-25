@@ -24,16 +24,26 @@ const EnvSchema = z.object({
   JWT_ISSUER: z.string().default('customer-portal'),
   JWT_AUDIENCE: z.string().default('customer-portal-clients'),
 
-  BUBBLE_BASE_URL: z.string().url(),
-  BUBBLE_API_KEY: z.string().min(1),
-  BUBBLE_HEALTH_URL: z.string().url().optional(),
+  // Bubble removed
 
   ENCRYPTION_KEY: z.string().min(32, 'ENCRYPTION_KEY should be 32+ chars'),
 
   WEBSOCKET_PUBLIC_URL: z.string().url(),
 
+  // Supabase Storage (optional)
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_BUCKET: z.string().optional(),
+
+  // YouTube OAuth (optional for ready-made minimal client)
+  YOUTUBE_CLIENT_ID: z.string().optional(),
+  YOUTUBE_CLIENT_SECRET: z.string().optional(),
+  YOUTUBE_REDIRECT_URI: z.string().url().optional(),
+
   // Single-admin policy: the email defined here is treated as the only ADMIN
   ADMIN_EMAIL: z.string().email().optional(),
+  // Optional: a separate email for a read-only admin viewer
+  ADMIN_VIEWER_EMAIL: z.string().email().optional(),
 
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),

@@ -17,7 +17,9 @@ export class AuthService {
     }
     const passwordHash = await argon2.hash(password);
     const adminEmail = env.ADMIN_EMAIL?.toLowerCase();
+    const adminViewerEmail = env.ADMIN_VIEWER_EMAIL?.toLowerCase();
     const isAdminEmail = adminEmail && email.toLowerCase() === adminEmail;
+    const isAdminViewerEmail = adminViewerEmail && email.toLowerCase() === adminViewerEmail;
 
     if (isAdminEmail) {
       const adminCreateData: any = { email, passwordHash, role: UserRole.ADMIN };
@@ -28,6 +30,19 @@ export class AuthService {
           data: { role: UserRole.USER },
         }),
         prisma.user.create({ data: adminCreateData }),
+      ]);
+      return user;
+    }
+
+    if (isAdminViewerEmail) {
+      const viewerCreateData: any = { email, passwordHash, role: UserRole.ADMIN_VIEWER };
+      if (name) viewerCreateData.name = name;
+      const [, user] = await prisma.$transaction([
+        prisma.user.updateMany({
+          where: { role: UserRole.ADMIN_VIEWER, NOT: { email } },
+          data: { role: UserRole.USER },
+        }),
+        prisma.user.create({ data: viewerCreateData }),
       ]);
       return user;
     }
@@ -79,16 +94,43 @@ export class AuthService {
         user.role = UserRole.USER;
       }
     }
+
+    // Enforce admin viewer policy at login as well
+    const adminViewerEmail = env.ADMIN_VIEWER_EMAIL?.toLowerCase();
+    if (adminViewerEmail) {
+      if (email.toLowerCase() === adminViewerEmail) {
+        if (user.role !== UserRole.ADMIN_VIEWER) {
+          await prisma.$transaction([
+            prisma.user.updateMany({
+              where: { role: UserRole.ADMIN_VIEWER, NOT: { email } },
+              data: { role: UserRole.USER },
+            }),
+            prisma.user.update({ where: { id: user.id }, data: { role: UserRole.ADMIN_VIEWER } }),
+          ]);
+          user.role = UserRole.ADMIN_VIEWER;
+        } else {
+          // Ensure no other admin viewers exist
+          await prisma.user.updateMany({
+            where: { role: UserRole.ADMIN_VIEWER, NOT: { email } },
+            data: { role: UserRole.USER },
+          });
+        }
+      } else if (user.role === UserRole.ADMIN_VIEWER) {
+        // Demote if someone else somehow has admin_viewer role
+        await prisma.user.update({ where: { id: user.id }, data: { role: UserRole.USER } });
+        user.role = UserRole.USER;
+      }
+    }
     const token = jwt.sign(
-      { sub: user.id, email: user.email, role: user.role.toLowerCase() },
+      { sub: user.id, email: user.email, name: user.name, role: user.role.toLowerCase() },
       env.JWT_SECRET,
       { audience: env.JWT_AUDIENCE, issuer: env.JWT_ISSUER }
     );
     return { user, token };
   }
 
-  static issueDevToken(userId: string, email?: string, role: 'user' | 'admin' = 'user') {
-    return jwt.sign({ sub: userId, email, role }, env.JWT_SECRET, { audience: env.JWT_AUDIENCE, issuer: env.JWT_ISSUER });
+  static issueDevToken(userId: string, email?: string, role: 'user' | 'admin' | 'admin_viewer' = 'user', name?: string) {
+    return jwt.sign({ sub: userId, email, name, role }, env.JWT_SECRET, { audience: env.JWT_AUDIENCE, issuer: env.JWT_ISSUER });
   }
 
   static async requestPasswordReset(email: string): Promise<void> {

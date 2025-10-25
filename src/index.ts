@@ -3,9 +3,9 @@ import { env } from './env';
 import { createServer } from './server';
 import { logger } from './logger';
 import { prisma } from './prisma';
-import axios from 'axios';
 import { initRealtime } from './realtime';
 import { initQueue } from './queue';
+import { initProviders } from './services/providers/bootstrap';
 
 async function findAvailablePort(startPort: number, maxAttempts = 10): Promise<number> {
   return await new Promise((resolve, reject) => {
@@ -46,6 +46,7 @@ async function main() {
     logger.info({ port }, 'Gateway listening');
   });
   initRealtime(server);
+  initProviders();
   initQueue();
 
   // Lightweight background health checker (logs only)
@@ -54,12 +55,6 @@ async function main() {
       await prisma.$queryRaw`SELECT 1`;
     } catch (e) {
       logger.warn({ e }, 'DB health check failed');
-    }
-    try {
-      const url = env.BUBBLE_HEALTH_URL || env.BUBBLE_BASE_URL;
-      await axios.get(url, { headers: { Authorization: `Bearer ${process.env.BUBBLE_API_KEY}` }, timeout: 5000 });
-    } catch (e) {
-      logger.warn({ e }, 'Bubble health check failed');
     }
   }, 5 * 60 * 1000);
 

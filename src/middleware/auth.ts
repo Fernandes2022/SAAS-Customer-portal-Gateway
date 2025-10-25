@@ -27,4 +27,16 @@ export function requireAdmin(req: AuthenticatedRequest, res: Response, next: Nex
   return next();
 }
 
+export function requireAdminRead(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (!req.auth) return res.status(401).json({ error: 'Unauthenticated' });
+  if (req.auth.role !== 'admin' && req.auth.role !== 'admin_viewer') return res.status(403).json({ error: 'Forbidden' });
+  return next();
+}
+
+export function requireUser(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (!req.auth) return res.status(401).json({ error: 'Unauthenticated' });
+  if (req.auth.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  return next();
+}
+
 

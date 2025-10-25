@@ -18,6 +18,7 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
+  ADMIN_VIEWER
 }
 
 enum UserStatus {
@@ -48,17 +49,22 @@ enum WebhookStatus {
 // ----- Core domain models -----
 
 model Plan {
-  id              String   @id @default(uuid())
-  slug            String   @unique
-  channelLimit    Int
-  uploadQuota     Int
-  priceCents      Int
-  billingInterval String
-  stripePriceId   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  slug                 String   @unique
+  channelLimit         Int
+  uploadQuota          Int
+  videoQuota           Int?     // Optional: separate video upload limit
+  podcastQuota         Int?     // Optional: separate podcast upload limit
+  priceCents           Int
+  billingInterval      String
+  stripePriceId        String?  // Monthly price ID
+  stripeAnnualPriceId  String?  // Annual price ID (for 2 months free discount)
+  hasWatermark         Boolean  @default(false) // True for Free tier
+  features             Json?    // Feature flags (localization level, AI optimization, etc)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  users           User[]
+  users                User[]
 }
 
 model User {
@@ -136,16 +142,18 @@ model Job {
 // ----- Supporting models -----
 
 model PlanUsage {
-  id           String   @id @default(uuid())
-  userId       String
-  periodStart  DateTime
-  periodEnd    DateTime
-  uploadsUsed  Int      @default(0)
-  channelsUsed Int      @default(0)
-  updatedAt    DateTime @updatedAt
-  createdAt    DateTime @default(now())
+  id            String   @id @default(uuid())
+  userId        String
+  periodStart   DateTime
+  periodEnd     DateTime
+  uploadsUsed   Int      @default(0)
+  videosUsed    Int      @default(0)  // Track video uploads separately
+  podcastsUsed  Int      @default(0)  // Track podcast uploads separately
+  channelsUsed  Int      @default(0)
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, periodStart, periodEnd])
   @@index([userId])

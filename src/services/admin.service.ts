@@ -5,6 +5,21 @@ export class AdminService {
   static listUsers() {
     return prisma.user.findMany({ select: { id: true, email: true, role: true, status: true, planId: true } });
   }
+  static listJobs() {
+    return prisma.job.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        progress: true,
+        scheduledAt: true,
+        user: { select: { id: true, email: true } },
+        channel: { select: { id: true, displayName: true, provider: true } },
+      },
+    });
+  }
   static async setUserStatus(userId: string, status: 'ACTIVE' | 'SUSPENDED') {
     return prisma.user.update({ where: { id: userId }, data: { status } });
   }

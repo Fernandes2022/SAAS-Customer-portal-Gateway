@@ -1,6 +1,7 @@
 import { prisma } from '../prisma';
 import { PlanService } from './plan.service';
 import { enqueueUpload } from '../queue';
+import { StorageService } from './storage.service';
 
 export class UploadsService {
   static async scheduleUpload(userId: string, input: { channelId: string; assetUrl: string; title: string; description?: string; platform: string; scheduledAt: string }) {
@@ -34,6 +35,10 @@ export class UploadsService {
     });
 
     return job;
+  }
+
+  static async presignUpload(_userId: string, input: { filename: string; contentType: string }) {
+    return StorageService.presignUpload(input);
   }
 }
 

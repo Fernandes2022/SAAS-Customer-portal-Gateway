@@ -7,6 +7,10 @@ export class AdminController {
     const users = await AdminService.listUsers();
     res.json(users);
   }
+  static async listJobs(_req: AuthenticatedRequest, res: Response) {
+    const jobs = await AdminService.listJobs();
+    res.json(jobs);
+  }
   static async setStatus(req: AuthenticatedRequest, res: Response) {
     const { id } = req.params as { id: string };
     const { status } = req.body as { status: 'ACTIVE' | 'SUSPENDED' };
