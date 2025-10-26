@@ -2,7 +2,7 @@ import net from 'net';
 import { env } from './env';
 import { createServer } from './server';
 import { logger } from './logger';
-import { prisma } from './prisma';
+import { prisma, ensureDbConnection } from './prisma';
 import { initRealtime } from './realtime';
 import { initQueue } from './queue';
 import { initProviders } from './services/providers/bootstrap';
@@ -40,6 +40,14 @@ async function findAvailablePort(startPort: number, maxAttempts = 10): Promise<n
 }
 
 async function main() {
+  // Ensure database connection is established before starting server
+  logger.info('Connecting to database...');
+  const dbConnected = await ensureDbConnection();
+  if (!dbConnected) {
+    throw new Error('Failed to establish initial database connection');
+  }
+  logger.info('Database connection established');
+
   const port = await findAvailablePort(env.PORT);
   const app = createServer();
   const server = app.listen(port, () => {
@@ -49,14 +57,15 @@ async function main() {
   initProviders();
   initQueue();
 
-  // Lightweight background health checker (logs only)
+  // Enhanced health checker with auto-reconnect (every 2 minutes)
   const interval = setInterval(async () => {
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (e) {
-      logger.warn({ e }, 'DB health check failed');
+    const isHealthy = await ensureDbConnection();
+    if (isHealthy) {
+      logger.debug('Database health check passed');
+    } else {
+      logger.error('Database health check failed - connection issues persist');
     }
-  }, 5 * 60 * 1000);
+  }, 2 * 60 * 1000);
 
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutting down');

@@ -18,6 +18,9 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
 
+  // DATABASE_URL with connection pooling parameters recommended:
+  // postgresql://user:pass@host:5432/db?connection_limit=10&pool_timeout=20&connect_timeout=10
+  // See gateway/DATABASE_CONNECTION_GUIDE.md for detailed configuration
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
   JWT_SECRET: z.string().min(16, 'JWT_SECRET should be at least 16 chars'),
