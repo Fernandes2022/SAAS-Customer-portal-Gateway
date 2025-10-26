@@ -48,14 +48,12 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
-COPY prisma ./prisma/
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Copy node_modules from builder (includes generated Prisma Client)
+COPY --from=builder /app/node_modules ./node_modules
 
-# Copy generated Prisma Client from builder (instead of regenerating)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+# Copy prisma schema
+COPY --from=builder /app/prisma ./prisma
 
 # Copy built application from builder
 COPY --from=builder --chown=gateway:nodejs /app/dist ./dist
