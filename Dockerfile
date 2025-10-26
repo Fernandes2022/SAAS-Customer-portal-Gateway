@@ -29,6 +29,9 @@ RUN pnpm prisma:generate
 # Build TypeScript
 RUN pnpm build
 
+# Verify build output
+RUN ls -la /app && ls -la /app/dist
+
 # =============================================================================
 # Stage 2: Runtime - Lightweight production image
 # =============================================================================
@@ -56,7 +59,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
 # Copy built application from builder
-COPY --from=builder --chown=gateway:nodejs /app/dist ./dist
+COPY --from=builder /app/dist ./dist
+
+# Verify dist folder exists and set ownership
+RUN ls -la /app/dist && chown -R gateway:nodejs /app
 
 # Switch to non-root user
 USER gateway
