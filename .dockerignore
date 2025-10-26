@@ -44,7 +44,6 @@ __mocks__/
 .editorconfig
 .prettierrc
 .eslintrc*
-tsconfig.json
 nodemon.json
 
 # Logs
