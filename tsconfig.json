@@ -3,6 +3,7 @@
     "target": "ES2021",
     "module": "CommonJS",
     "lib": ["ES2021"],
+    "rootDir": "src",
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
@@ -10,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "prisma/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }
 
