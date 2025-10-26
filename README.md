@@ -9,9 +9,9 @@ cd gateway
 pnpm install
 pnpm prisma:generate
 
-# Create .env (see template below)
-cp ../.env.example .env  # Linux/Mac
-# OR manually create .env with template below
+# Create .env
+cp ../.env.example .env
+# Edit .env with your values
 
 # Run migrations
 pnpm prisma:migrate
@@ -421,53 +421,70 @@ Configured to allow frontend origin in production
 - Prisma unique constraints
 - JWT expiration (30 days default)
 
-## 🚀 Deployment
+## 🚀 Deployment (Render)
 
 ### Prerequisites
-1. PostgreSQL database (Supabase, Neon, AWS RDS)
-2. Redis instance (Upstash, Redis Cloud) - optional
+1. PostgreSQL database (Render Postgres or external)
+2. Redis instance (Upstash recommended)
 3. Stripe account with webhook configured
-4. Environment variables set
 
-### Steps
+### Render Deployment
 
-**1. Database Migration**
+**1. Push Gateway to GitHub**
 ```bash
-pnpm prisma:deploy
+git add gateway/
+git commit -m "Add gateway"
+git push
 ```
 
-**2. Seed Initial Plans** (optional)
-```sql
-INSERT INTO "Plan" (id, slug, "channelLimit", "uploadQuota", "priceCents", "billingInterval", "stripePriceId")
-VALUES
-  ('free-plan', 'free', 2, 2, 0, 'month', NULL),
-  ('pro-plan', 'pro', 5, 50, 1900, 'month', 'price_1ABC...'),
-  ('agency-plan', 'agency', 10, 999999, 4900, 'month', 'price_1XYZ...');
+**2. Create Web Service on Render**
+- Go to https://dashboard.render.com
+- New → Web Service
+- Connect your GitHub repo
+- Configure:
+  - **Name**: saas-gateway
+  - **Root Directory**: `gateway`
+  - **Environment**: Docker
+  - **Plan**: Starter or higher
+  - **Dockerfile Path**: `gateway/Dockerfile`
+
+**3. Add Environment Variables**
+Set all variables from `.env.example` in Render dashboard:
+```
+DATABASE_URL=postgresql://...
+JWT_SECRET=...
+ENCRYPTION_KEY=...
+REDIS_URL=redis://...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+YOUTUBE_CLIENT_ID=...
+YOUTUBE_CLIENT_SECRET=...
+FRONTEND_BASE_URL=https://your-app.vercel.app
+WEBSOCKET_PUBLIC_URL=https://saas-gateway.onrender.com
 ```
 
-**3. Start Server**
-```bash
-pnpm build
-pnpm start
-```
+**4. Add Build Command** (if not using Dockerfile)
+In Render dashboard, set:
+- Build Command: `pnpm install && pnpm prisma:generate && pnpm build`
+- Start Command: `pnpm prisma:deploy && pnpm start`
 
-**4. Configure Stripe Webhook**
-- Endpoint: `https://yourdomain.com/webhook/stripe`
+**5. Deploy**
+Click "Create Web Service" - Render will build and deploy automatically
+
+**6. Configure Stripe Webhook**
+- Endpoint: `https://saas-gateway.onrender.com/webhook/stripe`
 - Events: `checkout.session.completed`, `customer.subscription.*`
-- Copy webhook secret to `STRIPE_WEBHOOK_SECRET`
+- Copy webhook secret to Render environment variables
 
-### Docker (Example)
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
-COPY . .
-RUN pnpm prisma:generate
-RUN pnpm build
-EXPOSE 4000
-CMD ["pnpm", "start"]
+**7. Verify Health**
+```bash
+curl https://saas-gateway.onrender.com/health
 ```
+
+### Rollback
+Render keeps previous deployments - click "Rollback" in dashboard to restore previous version
 
 ## 🧪 Development
 

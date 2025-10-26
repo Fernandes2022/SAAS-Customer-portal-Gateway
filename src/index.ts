@@ -73,6 +73,19 @@ async function main() {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
 }
 
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (err) => {
+  logger.error({ err }, 'Uncaught exception - this should not happen in production');
+  // In production, you might want to send this to an error tracking service
+  // For now, we log it but don't exit to keep the server running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error({ reason, promise }, 'Unhandled promise rejection - this should not happen');
+  // In production, you might want to send this to an error tracking service
+  // For now, we log it but don't exit to keep the server running
+});
+
 main().catch((err) => {
   logger.error({ err }, 'Fatal startup error');
   process.exit(1);

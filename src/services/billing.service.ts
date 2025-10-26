@@ -73,9 +73,14 @@ export class BillingService {
   }
 
   static async handleWebhook(event: Stripe.Event) {
+    console.log(`[WEBHOOK] Received event: ${event.type} (${event.id})`);
+    
     // Idempotency via WebhookEvent table
     const exists = await prisma.webhookEvent.findUnique({ where: { source_eventId: { source: 'stripe', eventId: event.id } } });
-    if (exists) return; // already processed
+    if (exists) {
+      console.log(`[WEBHOOK] Event already processed: ${event.id}`);
+      return; // already processed
+    }
     await prisma.webhookEvent.create({ data: { source: 'stripe', eventId: event.id, status: 'RECEIVED', payload: event as unknown as object } });
 
     switch (event.type) {
@@ -83,13 +88,47 @@ export class BillingService {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         try {
-          // Minimal example: assume we stored userId on metadata
           const obj: any = event.data.object as any;
-          const userId: string | undefined = obj?.metadata?.userId || obj?.client_reference_id || obj?.customer_email && (await prisma.user.findUnique({ where: { email: obj.customer_email } }))?.id;
+          let userId: string | undefined = obj?.metadata?.userId || obj?.client_reference_id;
+          
+          // If no userId, try to find by customer email
+          if (!userId && obj?.customer_email) {
+            const user = await prisma.user.findUnique({ where: { email: obj.customer_email } });
+            userId = user?.id;
+          }
+          
+          // If no userId, try to find by stripe customer ID
+          if (!userId && obj?.customer) {
+            const user = await prisma.user.findFirst({ where: { stripeCustomerId: obj.customer } });
+            userId = user?.id;
+          }
+
           if (userId) {
+            console.log(`[WEBHOOK] Found userId: ${userId}`);
             let planId: string | null = null;
             if (event.type !== 'customer.subscription.deleted') {
-              const priceId: string | undefined = obj?.items?.data?.[0]?.price?.id || obj?.plan?.id || obj?.display_items?.[0]?.plan?.id;
+              let priceId: string | undefined;
+              
+              // For checkout.session.completed, need to fetch subscription to get price
+              if (event.type === 'checkout.session.completed' && obj?.subscription && stripe) {
+                console.log(`[WEBHOOK] Fetching subscription: ${obj.subscription}`);
+                try {
+                  const subscription = await stripe.subscriptions.retrieve(obj.subscription as string);
+                  priceId = subscription.items.data[0]?.price?.id;
+                  console.log(`[WEBHOOK] Found priceId from subscription: ${priceId}`);
+                } catch (e) {
+                  console.error('[WEBHOOK] Failed to retrieve subscription:', e);
+                }
+              }
+              
+              // Fallback to various locations in the event object
+              if (!priceId) {
+                priceId = obj?.items?.data?.[0]?.price?.id || obj?.plan?.id || obj?.display_items?.[0]?.plan?.id;
+                if (priceId) {
+                  console.log(`[WEBHOOK] Found priceId from event object: ${priceId}`);
+                }
+              }
+              
               if (priceId) {
                 // Check both monthly and annual price IDs
                 const plan = await prisma.plan.findFirst({ 
@@ -101,11 +140,29 @@ export class BillingService {
                   } 
                 });
                 planId = plan?.id ?? null;
+                
+                if (planId) {
+                  console.log(`[WEBHOOK] Matched plan: ${plan?.slug} (${planId})`);
+                } else {
+                  console.error(`[WEBHOOK] No plan found for priceId: ${priceId}`);
+                  // Log all available plans to help debug
+                  const allPlans = await prisma.plan.findMany({ select: { slug: true, stripePriceId: true, stripeAnnualPriceId: true } });
+                  console.error('[WEBHOOK] Available plans:', JSON.stringify(allPlans, null, 2));
+                }
+              } else {
+                console.error('[WEBHOOK] No priceId found in webhook event');
+                console.error('[WEBHOOK] Event object keys:', Object.keys(obj));
               }
             }
+            console.log(`[WEBHOOK] Updating user ${userId} to planId: ${planId}`);
             await prisma.user.update({ where: { id: userId }, data: { planId } });
+            console.log(`[WEBHOOK] ✅ Successfully updated user plan`);
+          } else {
+            console.error('[WEBHOOK] No userId found in webhook event');
+            console.error('[WEBHOOK] Event object:', JSON.stringify(obj, null, 2));
           }
         } catch (e) {
+          console.error('Error handling webhook:', e);
           // swallow to not break webhook handling; tracked via webhookEvent
         }
         break;

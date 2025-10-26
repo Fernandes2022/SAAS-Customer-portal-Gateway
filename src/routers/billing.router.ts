@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import express from 'express';
 import { BillingController } from '../controllers/billing.controller';
 import { requireAuth } from '../middleware/auth';
 
@@ -17,8 +18,8 @@ billingRouter.post('/webhook/stripe', (req, res, next) => {
   });
 }, BillingController.webhook);
 
-// Authenticated billing endpoints
-billingRouter.use('/api/v1/billing', requireAuth);
+// Authenticated billing endpoints - with JSON parsing
+billingRouter.use('/api/v1/billing', express.json({ limit: '2mb' }), requireAuth);
 billingRouter.get('/api/v1/billing/plan', (req, res, next) => BillingController.getPlan(req as any, res).catch(next as any));
 billingRouter.post('/api/v1/billing/checkout', (req, res, next) => BillingController.createCheckoutSession(req as any, res).catch(next as any));
 billingRouter.post('/api/v1/billing/portal', (req, res, next) => BillingController.createPortalSession(req as any, res).catch(next as any));
