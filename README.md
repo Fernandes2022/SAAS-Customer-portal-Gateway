@@ -366,9 +366,34 @@ export function initProviders() {
 5. User's `planId` updated automatically
 
 ### Events Handled
-- `checkout.session.completed` - New subscription
-- `customer.subscription.updated` - Plan change
+- `checkout.session.completed` - New subscription (initial payment)
+- `customer.subscription.updated` - Plan change (upgrade/downgrade)
 - `customer.subscription.deleted` - Cancellation
+- `invoice.payment_succeeded` - **Recurring payments** (monthly/annual renewals)
+
+### Troubleshooting Webhooks
+
+If payments succeed but plans don't update:
+
+1. **Check webhook URL**: Must be `/webhook/stripe` (not `/api/v1/billing/webhook`)
+2. **Verify environment variable**: `STRIPE_WEBHOOK_SECRET` must be set
+3. **Debug recent events**: `GET /api/v1/billing/webhooks/debug`
+4. **Manual sync fallback**: `POST /api/v1/billing/sync`
+
+See `STRIPE_WEBHOOK_TROUBLESHOOTING.md` for complete troubleshooting guide.
+
+### Manual Plan Sync
+
+When webhooks fail, use the manual sync endpoint:
+
+```bash
+# As authenticated user
+curl -X POST \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  https://your-domain.com/api/v1/billing/sync
+```
+
+This fetches the user's active subscription directly from Stripe and updates their plan.
 
 ## 🔌 WebSocket (Socket.IO)
 

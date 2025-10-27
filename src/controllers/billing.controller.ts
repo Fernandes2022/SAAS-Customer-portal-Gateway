@@ -46,6 +46,41 @@ export class BillingController {
       res.status(400).json({ error: e.message || 'Failed to create portal session' });
     }
   }
+
+  /**
+   * Manual sync endpoint - use this when webhooks fail
+   * Fetches the user's subscription directly from Stripe and updates the plan
+   */
+  static async syncPlan(req: AuthenticatedRequest, res: Response) {
+    try {
+      const result = await BillingService.syncUserPlanFromStripe(req.auth!.sub);
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message || 'Failed to sync plan' });
+    }
+  }
+
+  /**
+   * Webhook debugging endpoint - returns recent webhook events for user
+   * Helps diagnose why plan updates aren't working
+   */
+  static async getWebhookEvents(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { prisma } = await import('../prisma');
+      const events = await prisma.webhookEvent.findMany({
+        where: { source: 'stripe' },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      res.json({ events });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || 'Failed to fetch webhook events' });
+    }
+  }
 }
 
 
