@@ -129,7 +129,7 @@ export class BillingService {
               }
               
               // For subscription events, get from subscription items
-              if ((event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') && obj?.items?.data?.[0]) {
+              if (event.type === 'customer.subscription.updated' && obj?.items?.data?.[0]) {
                 priceId = obj.items.data[0].price?.id;
                 console.log(`[WEBHOOK] Found priceId from subscription items: ${priceId}`);
               }
